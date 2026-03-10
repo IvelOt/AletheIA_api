@@ -9,7 +9,9 @@ services:
     volumes:
       - ./.env:/app/.env
       - ./models:/models
-    environment:
-      - CLASSIFIER_PATH=/models/document_classifier.onnx
-      - INSPIREFACE_MODEL_PATH=/models/.inspireface/ms/tunmxy/InspireFace/Pikachu
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
     restart: unless-stopped

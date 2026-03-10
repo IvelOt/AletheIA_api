@@ -1,0 +1,10 @@
+app/build/
+.git/
+.venv/
+models/
+storage/
+aletheia.db
+faces.index
+debug_output/
+*.so
+*.o

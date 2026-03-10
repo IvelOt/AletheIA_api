@@ -1,0 +1,18 @@
+services:
+  aletheia-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aletheia-edge
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./.env:/app/.env
+      - ./models:/models
+      - ./storage:/app/storage
+      - ./aletheia.db:/app/aletheia.db
+      - ./faces.index:/app/faces.index
+    environment:
+      - CLASSIFIER_PATH=/models/document_classifier.onnx
+      - INSPIREFACE_MODEL_PATH=/models/.inspireface/ms/tunmxy/InspireFace/Pikachu
+    restart: unless-stopped

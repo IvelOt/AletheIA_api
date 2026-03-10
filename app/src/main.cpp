@@ -10,9 +10,9 @@ using json = nlohmann::json;
 std::unique_ptr<AletheiaEngine> engine;
 
 int main(int argc, char** argv) {
-    // 1. Carregar Configuração
+    // 1. Carregar Configuração (Tenta diretórios comuns)
     Config& config = Config::getInstance();
-    if (!config.load("../../.env")) {
+    if (!config.load(".env") && !config.load("../../.env")) {
         std::cerr << "[Aletheia Edge] Aviso: Arquivo .env não encontrado. Usando padrões." << std::endl;
     }
 

@@ -14,13 +14,14 @@ BiometricIndex::~BiometricIndex() {
 }
 
 bool BiometricIndex::init() {
-    std::ifstream f(index_path_.c_str());
-    if (f.good()) {
-        // Arquivo existe, carrega do disco
+    std::ifstream f(index_path_.c_str(), std::ios::binary | std::ios::ate);
+    if (f.good() && f.tellg() > 0) {
+        // Arquivo existe e não está vazio, carrega do disco
+        f.close();
         alg_hnsw_ = new hnswlib::HierarchicalNSW<float>(space_, index_path_, false, max_elements_);
         return true;
     } else {
-        // Cria um novo índice (M=16, ef_construction=200 são valores otimizados padrão)
+        // Arquivo não existe ou está vazio, cria um novo índice
         alg_hnsw_ = new hnswlib::HierarchicalNSW<float>(space_, max_elements_, 16, 200);
         return true;
     }

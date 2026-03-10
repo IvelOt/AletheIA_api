@@ -1,80 +1,122 @@
-# Aletheia Engine: Brazilian Identity Document Biometric Verification
+# Aletheia Edge API: High-Performance Biometric Verification
 
-This project provides a high-performance facial verification and document validation engine optimized for Python (PyPy). It combines deep learning models via ONNX Runtime to ensure a Brazilian identity document is valid, unique, and matches the user's selfie.
-
----
-
-## Technical Workflow
-
-The engine utilizes a hierarchical validation pipeline to ensure security and computational efficiency:
-
-1. **Document Classification**: A trained MobileNetV3 Small model performs initial screening to verify if the uploaded image is a valid Brazilian ID (CNH or RG). This prevents non-document images from consuming further processing resources.
-2. **Robust Face Detection**: The engine uses the UltraFace model to locate human faces. It automatically attempts four rotations (0°, 90°, 180°, 270°) to find the correct orientation.
-3. **Uniqueness Constraint**: A strict rule is applied where the document must contain exactly one face. Detection of multiple faces or zero faces results in immediate rejection.
-4. **Anti-Fraud Layer (LEANN)**: The engine extracts a 512-D biometric embedding using ArcFace. It compares the document's face against a local vector database to prevent the same document from being used across multiple accounts.
-5. **Biometric Matching**: If the document is valid and unique, the user's selfie is processed. A cosine similarity score is calculated between the document face and the selfie face. A successful match requires a score above 0.55.
+Aletheia Edge is a standalone, ultra-fast biometric verification engine written in **C++**. It provides a "plug-and-play" Identity Verification (IDV) service optimized for Brazilian identity documents (CNH and RG), designed to run on edge devices or as a high-performance microservice.
 
 ---
 
-## Project Structure
+## Key Features
 
-- `AletheiaEngine.py`: Core logic containing the validation pipeline and ONNX inference calls.
-- `app.py`: Entry point for local execution and CLI testing.
-- `models/`: Directory containing pre-trained ONNX models:
-- `ultraface.onnx`: Face detection.
-- `arcface.onnx`: Feature extraction (embeddings).
-- `document_classifier.onnx`: MobileNetV3 document screening.
-
-- `data/`: Persistent storage for the biometric vector database.
-- `debug/`: Output directory for visual audit logs and comparison results.
+- **Document Screening**: Uses a MobileNetV3 ONNX model to verify if the uploaded image is a valid Brazilian ID.
+- **Biometric Matching (1:1)**: High-precision face matching between a document and a selfie using the **InspireFace SDK**.
+- **Biometric Deduplication (1:N)**: Built-in **HNSWLib** index for ultra-fast local search (finding if a face is already enrolled in milliseconds).
+- **Local Audit Log**: Integrated **SQLite3** database for tracking request metadata, CPF/RG mapping, and compliance.
+- **Zero-Infrastructure**: No need for external databases or message queues. Everything is contained within a single binary.
+- **In-Memory Performance**: Image decoding and neural inference happen entirely in RAM for sub-500ms response times.
 
 ---
 
-## Setup and Execution with UV
+## Project Architecture
 
-This project uses **uv** for dependency management, ensuring fast and reproducible environments.
-
-### Installation
-
-To install dependencies and create a virtual environment, run:
-
-```bash
-uv venv
-uv pip install opencv-python-headless numpy onnxruntime
-
-```
-
-### Running the Project
-
-Ensure your model files are placed in the `models` folder and your test images in the `Examples` folder. Execute the script using:
-
-```bash
-uv run app.py
-
+```text
+[Client] -> [HTTP API (C++)] -> [OpenCV Image Processing]
+                                      |
+              +-----------------------+-----------------------+
+              |                       |                       |
+      [ONNX Classifier]      [InspireFace SDK]        [HNSWLib Index]
+      (ID Screening)         (Face Match/Quality)     (1:N Deduplication)
+                                      |
+                              [SQLite3 Audit DB]
 ```
 
 ---
 
-## Current Status and Roadmap
+## Quick Start
 
-### Completed Features
+### 1. Prerequisites (Arch Linux)
+The system is optimized for Arch Linux. Ensure you have a C++17 compiler and CMake installed.
 
-- MobileNetV3 document classification.
-- Automated image rotation handling.
-- Biometric 1:1 face comparison.
-- Local vector storage for duplicate detection.
-- Visual debug generation through OpenCV.
+### 2. Installation & Setup
+Clone the repository and run the automated setup script. This script installs system dependencies (OpenCV, SQLite, ONNX Runtime), downloads the InspireFace C++ SDK, and builds the project.
 
-### Pending Implementation
+```bash
+git clone <your-repo-url>
+cd aletheia-api
+bash setup.sh
+```
 
-- **REST API Layer**: Integration with Socketify.py or FastAPI to expose endpoints for web and mobile clients.
-- **Multi-part/form-data Handling**: Logic to process image uploads directly from HTTP requests.
-- **Asynchronous Database Integration**: Moving from local storage to a professional vector database for high-concurrency environments.
+### 3. Running the API
+After the setup is complete, you can start the server from the build directory:
+
+```bash
+cd app/build
+./aletheia_edge
+```
+The API will be available at `http://0.0.0.0:8080`.
 
 ---
 
-## Academic Information
+## API Documentation
 
-This project was developed as a university assignment focused on Applied Computer Vision and Document Intelligence. It demonstrates the practical application of lightweight neural networks in biometric security systems.
+### **1. Face Verification (1:1)**
+Compare a selfie against a document to verify identity.
+
+**Endpoint**: `POST /v1/verify`  
+**Payload**: `multipart/form-data`
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `selfie` | File | User's live selfie (JPEG/PNG) |
+| `document` | File | Brazilian ID image (CNH/RG) |
+
+**Example**:
+```bash
+curl -X POST http://localhost:8080/v1/verify 
+  -F "selfie=@selfie.jpg" 
+  -F "document=@document.jpg"
+```
+
+### **2. User Enrollment (1:N + Audit)**
+Validate, match, and register a user into the local biometric index.
+
+**Endpoint**: `POST /v1/enroll`  
+**Payload**: `multipart/form-data`
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `identifier` | Text | User's CPF or RG |
+| `selfie` | File | User's live selfie |
+| `document` | File | Brazilian ID image |
+
+**Example**:
+```bash
+curl -X POST http://localhost:8080/v1/enroll 
+  -F "identifier=123.456.789-00" 
+  -F "selfie=@selfie.jpg" 
+  -F "document=@document.jpg"
+```
 
 ---
+
+## Configuration
+
+You can tune the system behavior using the `.env` file:
+
+- `PORT`: API port (default: 8080).
+- `SIMILARITY_THRESHOLD`: Cosine similarity required for a match (default: 0.55).
+- `QUALITY_THRESHOLD`: Minimum face quality required (default: 0.45).
+- `DB_PATH`: Path to the SQLite audit database.
+
+---
+
+## Directory Structure
+
+- `app/src/`: Core C++ source code (Engine, Database, Biometrics).
+- `app/third_party/`: Header-only and shared libraries (httplib, json, hnswlib, inspireface).
+- `models/`: ONNX and InspireFace neural network models.
+- `storage/`: Local directory where audit images are saved.
+- `Examples/`: Test images for verification.
+
+---
+
+## License
+Academic Project - Developed for Brazilian Identity Verification research.

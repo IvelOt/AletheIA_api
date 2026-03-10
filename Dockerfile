@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     unzip \
     pkg-config \
     libopencv-dev \
-    libsqlite3-dev \
     uuid-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -42,7 +41,6 @@ RUN apt-get update && apt-get install -y \
     libopencv-core4.5d \
     libopencv-imgproc4.5d \
     libopencv-imgcodecs4.5d \
-    libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

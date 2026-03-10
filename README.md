@@ -1,103 +1,73 @@
-# Aletheia Edge API: High-Performance Biometric Verification
+# Aletheia Edge API: High-Performance Biometric Verification (Stateless)
 
-Aletheia Edge is a standalone, ultra-fast biometric verification engine written in **C++**. It provides a "plug-and-play" Identity Verification (IDV) service optimized for Brazilian identity documents (CNH and RG), designed to run on edge devices or as a high-performance microservice.
-
----
-
-## Key Features
-
-- **Zero-Configuration Setup**: Run the entire stack with a single command via **Docker**.
-- **Document Screening**: Uses a MobileNetV3 ONNX model to verify Brazilian IDs.
-- **Biometric Matching (1:1)**: High-precision face matching using the **InspireFace SDK**.
-- **Biometric Deduplication (1:N)**: Built-in **HNSWLib** index for ultra-fast local search.
-- **Local Audit Log**: Integrated **SQLite3** database for compliance and tracking.
-- **Cross-Platform**: Works on Windows, Linux, and macOS via containerization.
+Aletheia Edge é um motor de verificação biométrica independente e ultra-rápido escrito em **C++**. Ele fornece um serviço de verificação de identidade (IDV) "plug-and-play" otimizado para documentos brasileiros (CNH e RG), projetado para rodar em dispositivos de borda ou como um microsserviço de alta performance.
 
 ---
 
-## Quick Start (The "Easy" Way)
+## 🚀 Diferenciais
 
-The recommended way to run Aletheia Edge is using **Docker**, as it handles all C++ dependencies (OpenCV, ONNX, InspireFace) for you.
+- **Stateless & Private**: Não armazena imagens, nomes ou bancos de dados. Processa tudo em RAM e esquece após a resposta.
+- **Zero-Configuration**: Setup completo com um único comando via **Docker**.
+- **Brazilian ID Screening**: Validação automática de integridade de documentos (CNH/RG) via ONNX.
+- **High Precision**: Match facial 1:1 utilizando o **InspireFace SDK** (Modelo Pikachu).
+- **Sub-500ms**: Resposta extremamente rápida para fluxos de onboarding síncronos.
 
-### 1. Prerequisites
-- [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/install/) installed.
+---
 
-### 2. Run the API
-Clone the repository and run:
+## 🛠️ Início Rápido
+
+### 1. Rodar a API
+Clone o repositório e inicie o container:
 ```bash
 docker compose up --build -d
 ```
 
-### 3. Verify it's running
-The API will be available at `http://localhost:8080`. You can check the logs with:
+### 2. Verificar Status
 ```bash
 docker compose logs -f
 ```
+A API estará disponível em `http://localhost:8080`.
 
 ---
 
-## Manual Installation (Native Build)
+## 📖 Documentação da API
 
-If you prefer to build the binary directly on your host machine (Linux only recommended):
-
-1. Run the setup script: `bash setup.sh` and choose option **2 (Native)**.
-2. Ensure you have the required system libraries: `opencv`, `sqlite3`, `onnxruntime`.
-3. The binary will be located in `app/build/aletheia_edge`.
-
----
-
-## API Documentation
-
-### **1. Face Verification (1:1)**
-Compare a selfie against a document.
+### **Verificação de Identidade (1:1)**
+Compara uma selfie contra um documento e retorna o resultado instantaneamente.
 
 **Endpoint**: `POST /v1/verify`  
 **Payload**: `multipart/form-data`
 
-| Field | Type | Description |
+| Campo | Tipo | Descrição |
 | :--- | :--- | :--- |
-| `selfie` | File | User's live selfie (JPEG/PNG) |
-| `document` | File | Brazilian ID image (CNH/RG) |
+| `selfie` | Arquivo | Foto atual do rosto do usuário (JPEG/PNG) |
+| `document` | Arquivo | Imagem do documento brasileiro (CNH ou RG) |
 
-**Example**:
+**Exemplo de Chamada**:
 ```bash
 curl -X POST http://localhost:8080/v1/verify \
-  -F "selfie=@selfie.jpg" \
-  -F "document=@document.jpg"
+  -F "selfie=@sua_selfie.jpg" \
+  -F "document=@seu_documento.jpg"
 ```
 
-### **2. User Enrollment (1:N + Audit)**
-Validate, match, and register a user into the local biometric index.
-
-**Endpoint**: `POST /v1/enroll`  
-**Payload**: `multipart/form-data`
-
-**Example**:
-```bash
-curl -X POST http://localhost:8080/v1/enroll \
-  -F "identifier=123.456.789-00" \
-  -F "selfie=@selfie.jpg" \
-  -F "document=@document.jpg"
+**Resposta de Sucesso**:
+```json
+{
+  "status": "success",
+  "similarity": 0.89,
+  "transaction_id": "tx_1710000000"
+}
 ```
 
 ---
 
-## Configuration
+## 🏗️ Estrutura de Pastas
 
-Settings are managed via the `.env` file. Key variables include:
-- `SIMILARITY_THRESHOLD`: Required score for a match (default: 0.55).
-- `QUALITY_THRESHOLD`: Minimum face quality (default: 0.45).
-
----
-
-## Directory Structure
-
-- `app/src/`: Core C++ source code.
-- `models/`: ONNX and InspireFace model files.
-- `storage/`: Audit images (mapped to container).
-- `aletheia.db`: SQLite database file.
+- `app/src/`: Código fonte C++ (Engine, Image Processor, API).
+- `models/`: Ativos de rede neural (ONNX e InspireFace).
+- `setup.sh`: Script de auxílio para ambiente local.
 
 ---
 
-## License
-Academic Project - Brazilian Identity Verification research.
+## 📄 Detalhes Técnicos
+Para informações sobre o pipeline de visão computacional, consulte o [ARCHITECTURE.md](./ARCHITECTURE.md).
